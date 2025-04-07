@@ -53,3 +53,34 @@ body {
 .table-striped tbody tr:nth-of-type(even) {
     background-color: #ffffff;
 }
+
+.mosaico {
+  width: 150px;
+  height: 150px;
+  margin: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.mosaico.habilitado {
+  background-color: #007bff;
+  color: white;
+}
+
+.mosaico.habilitado:hover {
+  transform: scale(1.1);
+  background-color: #0056b3;
+}
+
+.mosaico.deshabilitado {
+  background-color: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+}

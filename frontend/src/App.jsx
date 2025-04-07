@@ -4,6 +4,17 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './index.css'; // Ensure custom styles are applied
 
+// Configurar Axios para incluir el token en cada solicitud
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
 function App() {
   const [remesas, setRemesas] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -12,7 +23,7 @@ function App() {
   const [filteredDestinos, setFilteredDestinos] = useState([]); // Filtered destination countries
   const [form, setForm] = useState({
     cliente_id: '',
-    usuario_id: 5,
+    usuario_id: 1,
     pais_origen_id: '',
     pais_destino_id: '',
     monto_origen: '',
@@ -20,9 +31,9 @@ function App() {
     comision: '',
     ganancia: '',
     estado: 'Pendiente',
-    wallet_origen_id: 3,
-    wallet_destino_id: 4,
-    cuenta_bancaria_id: 7,
+    wallet_origen_id: 1,
+    wallet_destino_id: 1,
+    cuenta_bancaria_id: 1,
     beneficiario_nombre: '',
     notas: ''
   });
@@ -37,7 +48,13 @@ function App() {
   });
   const [showModal, setShowModal] = useState(false);
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false); // Estado para mostrar el modal de logout
   const [search, setSearch] = useState('');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Eliminar el token del almacenamiento local
+    window.location.reload(); // Recargar la página para redirigir al login
+  };
 
   useEffect(() => {
     fetchRemesas();
@@ -46,8 +63,12 @@ function App() {
   }, []);
 
   const fetchRemesas = async () => {
-    const res = await axios.get('http://localhost:4000/api/remesas');
-    setRemesas(res.data);
+    try {
+      const res = await axios.get('http://localhost:4000/api/remesas');
+      setRemesas(res.data);
+    } catch (err) {
+      console.error('Error fetching remesas:', err);
+    }
   };
 
   const fetchClientes = async () => {
@@ -154,7 +175,49 @@ function App() {
 
   return (
     <div className="container py-5">
-      <h1 className="text-center mb-4">Registro de Remesas</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1 className="text-center">Registro de Remesas</h1>
+        <button className="btn btn-danger" onClick={() => setShowLogoutModal(true)}>
+          Cerrar Sesión
+        </button>
+      </div>
+
+      {/* Modal de confirmación para cerrar sesión */}
+      {showLogoutModal && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirmar</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowLogoutModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>¿Estás seguro de que deseas cerrar sesión?</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowLogoutModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleLogout}
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="card p-4 mb-5 shadow">
         <div className="mb-3">
