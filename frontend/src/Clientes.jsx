@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [paises, setPaises] = useState([]);
@@ -21,12 +23,12 @@ function Clientes() {
   }, []);
 
   const fetchClientes = async () => {
-    const res = await axios.get('/api/clientes');
+    const res = await axios.get(`${API_URL}/api/clientes`);
     setClientes(res.data);
   };
 
   const fetchPaises = async () => {
-    const res = await axios.get('/api/paises');
+    const res = await axios.get(`${API_URL}/api/paises`);
     setPaises(res.data);
   };
 
@@ -45,7 +47,7 @@ function Clientes() {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Seguro que deseas eliminar este cliente?')) {
-      await axios.delete(`/api/clientes/${id}`);
+      await axios.delete(`${API_URL}/api/clientes/${id}`);
       fetchClientes();
     }
   };
@@ -58,9 +60,9 @@ function Clientes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (editCliente) {
-      await axios.put(`/api/clientes/${editCliente.id}`, form);
+      await axios.put(`${API_URL}/api/clientes/${editCliente.id}`, form);
     } else {
-      await axios.post('/api/clientes', form);
+      await axios.post(`${API_URL}/api/clientes`, form);
     }
     setShowModal(false);
     setEditCliente(null);

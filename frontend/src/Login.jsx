@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Login({ onLogin }) {
   const [form, setForm] = useState({ usuario: '', clave: '' });
   const [error, setError] = useState('');
@@ -16,7 +18,7 @@ function Login({ onLogin }) {
     localStorage.removeItem('rol');
     localStorage.removeItem('user_id');
     try {
-      const res = await axios.post('http://localhost:4000/api/login', form);
+      const res = await axios.post(`${API_URL}/api/login`, form);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('rol', res.data.rol);
       localStorage.setItem('user_id', res.data.user_id); // Guarda el id

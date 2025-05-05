@@ -16,6 +16,8 @@ axios.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Remesas() {
   const [remesas, setRemesas] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -67,7 +69,7 @@ function Remesas() {
 
   const fetchRemesas = async () => {
     try {
-      const res = await axios.get('http://localhost:4000/api/remesas');
+      const res = await axios.get(`${API_URL}/api/remesas`);
       setRemesas(res.data);
     } catch (err) {
       console.error('Error fetching remesas:', err);
@@ -75,19 +77,19 @@ function Remesas() {
   };
 
   const fetchClientes = async () => {
-    const res = await axios.get('http://localhost:4000/api/clientes');
+    const res = await axios.get(`${API_URL}/api/clientes`);
     setClientes(res.data);
     setFilteredClientes(res.data);
   };
 
   const fetchPaises = async () => {
-    const res = await axios.get('http://localhost:4000/api/paises');
+    const res = await axios.get(`${API_URL}/api/paises`);
     setPaises(res.data);
   };
 
   const fetchTasaCambio = async (origenId, destinoId) => {
     try {
-      const res = await axios.get(`/api/tasas_cambios?origen=${origenId}&destino=${destinoId}`);
+      const res = await axios.get(`${API_URL}/api/tasas_cambios?origen=${origenId}&destino=${destinoId}`);
       if (res.data) {
         setForm((prev) => ({ ...prev, tasa_cambio: res.data.tasa_cambio }));
         setIsTasaReadOnly(true);
@@ -139,7 +141,7 @@ function Remesas() {
 
   const handleCreateClient = async (e) => {
     e.preventDefault();
-    await axios.post('http://localhost:4000/api/clientes', newClientForm);
+    await axios.post(`${API_URL}/api/clientes`, newClientForm);
     setNewClientForm({
       nombre_completo: '',
       identificacion: '',
@@ -177,7 +179,7 @@ function Remesas() {
       };
 
       // 1. Registrar la remesa
-      const res = await axios.post('http://localhost:4000/api/remesas', data);
+      const res = await axios.post(`${API_URL}/api/remesas`, data);
       const remesaId = res.data.id;
 
       // 2. Subir comprobantes si hay
@@ -185,7 +187,7 @@ function Remesas() {
         const formData = new FormData();
         formData.append('remesa_id', remesaId);
         comprobantes.forEach(file => formData.append('comprobantes', file));
-        await axios.post('http://localhost:4000/api/comprobantes', formData, {
+        await axios.post(`${API_URL}/api/comprobantes`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       }

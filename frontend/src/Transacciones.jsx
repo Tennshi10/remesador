@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = 'http://localhost:4000'; // Cambia si tu backend está en otro host
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Transacciones() {
   const [remesas, setRemesas] = useState([]);
@@ -44,28 +44,28 @@ function Transacciones() {
   }, []);
 
   const fetchRemesas = async () => {
-    const res = await axios.get('/api/remesas');
+    const res = await axios.get(`${API_URL}/api/remesas`);
     setRemesas(res.data);
   };
 
   const fetchUsuarios = async () => {
-    const res = await axios.get('/api/usuarios');
+    const res = await axios.get(`${API_URL}/api/usuarios`);
     setUsuarios(res.data);
   };
 
   const fetchClientes = async () => {
-    const res = await axios.get('/api/clientes');
+    const res = await axios.get(`${API_URL}/api/clientes`);
     setClientes(res.data);
   };
 
   const fetchPaises = async () => {
-    const res = await axios.get('/api/paises');
+    const res = await axios.get(`${API_URL}/api/paises`);
     setPaises(res.data);
   };
 
   const fetchTasaCambio = async (origenId, destinoId) => {
     try {
-      const res = await axios.get(`/api/tasas_cambios?origen=${origenId}&destino=${destinoId}`);
+      const res = await axios.get(`${API_URL}/api/tasas_cambios?origen=${origenId}&destino=${destinoId}`);
       if (res.data) {
         setRemesaForm((prev) => ({ ...prev, tasa_cambio: res.data.tasa_cambio }));
       } else {
@@ -112,19 +112,19 @@ function Transacciones() {
 
   const handleVer = async (remesa) => {
     setSelectedRemesa(remesa);
-    const res = await axios.get(`/api/comprobantes/${remesa.id}`);
+    const res = await axios.get(`${API_URL}/api/comprobantes/${remesa.id}`);
     setComprobantes(res.data);
     setShowModal(true);
   };
 
   const handleCambiarEstado = async (remesa, nuevoEstado) => {
-    await axios.put(`/api/remesas/${remesa.id}`, { estado: nuevoEstado });
+    await axios.put(`${API_URL}/api/remesas/${remesa.id}`, { estado: nuevoEstado });
     fetchRemesas();
   };
 
   const handleEliminar = async (remesa) => {
     if (window.confirm('¿Seguro que deseas eliminar esta remesa?')) {
-      await axios.delete(`/api/remesas/${remesa.id}`);
+      await axios.delete(`${API_URL}/api/remesas/${remesa.id}`);
       fetchRemesas();
     }
   };
@@ -167,7 +167,7 @@ function Transacciones() {
       };
 
       // 1. Registrar la remesa
-      const res = await axios.post('/api/remesas', data);
+      const res = await axios.post(`${API_URL}/api/remesas`, data);
       const remesaId = res.data.id;
 
       // 2. Subir comprobantes si hay
@@ -175,7 +175,7 @@ function Transacciones() {
         const formData = new FormData();
         formData.append('remesa_id', remesaId);
         comprobantes.forEach(file => formData.append('comprobantes', file));
-        await axios.post('/api/comprobantes', formData, {
+        await axios.post(`${API_URL}/api/comprobantes`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       }
@@ -485,11 +485,11 @@ function Transacciones() {
               </div>
               <div className="modal-body text-center">
                 {showComprobante.ruta.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                  <img src={BACKEND_URL + showComprobante.ruta} alt="comprobante" style={{ maxWidth: '100%' }} />
+                  <img src={API_URL + showComprobante.ruta} alt="comprobante" style={{ maxWidth: '100%' }} />
                 ) : showComprobante.ruta.match(/\.pdf$/i) ? (
-                  <iframe src={BACKEND_URL + showComprobante.ruta} title="comprobante" style={{ width: '100%', height: '70vh' }}></iframe>
+                  <iframe src={API_URL + showComprobante.ruta} title="comprobante" style={{ width: '100%', height: '70vh' }}></iframe>
                 ) : (
-                  <a href={BACKEND_URL + showComprobante.ruta} target="_blank" rel="noopener noreferrer">Descargar</a>
+                  <a href={API_URL + showComprobante.ruta} target="_blank" rel="noopener noreferrer">Descargar</a>
                 )}
               </div>
               <div className="modal-footer">

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -19,7 +21,7 @@ function Usuarios() {
   }, []);
 
   const fetchUsuarios = async () => {
-    const res = await axios.get('/api/usuarios');
+    const res = await axios.get(`${API_URL}/api/usuarios`);
     setUsuarios(res.data);
   };
 
@@ -38,7 +40,7 @@ function Usuarios() {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Seguro que deseas eliminar este usuario?')) {
-      await axios.delete(`/api/usuarios/${id}`);
+      await axios.delete(`${API_URL}/api/usuarios/${id}`);
       fetchUsuarios();
     }
   };
@@ -58,14 +60,14 @@ function Usuarios() {
       return;
     }
     if (editUsuario) {
-      await axios.put(`/api/usuarios/${editUsuario.id}`, {
+      await axios.put(`${API_URL}/api/usuarios/${editUsuario.id}`, {
         usuario: form.usuario,
         clave: form.clave,
         rol: form.rol,
         activo: form.activo
       });
     } else {
-      await axios.post('/api/usuarios', {
+      await axios.post(`${API_URL}/api/usuarios`, {
         usuario: form.usuario,
         clave: form.clave,
         rol: form.rol,
@@ -103,7 +105,7 @@ function Usuarios() {
               <td>{u.id}</td>
               <td>{u.usuario}</td>
               <td>{u.rol}</td>
-              <td>{u.activo ? 'Sí' : 'No'}</td>
+              <td>{u.activo === 1 || u.activo === true ? 'Sí' : 'No'}</td>
               <td>
                 <button className="btn btn-primary btn-sm me-2" onClick={() => handleEdit(u)}>Editar</button>
                 <button className="btn btn-danger btn-sm" onClick={() => handleDelete(u.id)}>Eliminar</button>

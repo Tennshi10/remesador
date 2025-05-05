@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Tasas() {
   const [tasas, setTasas] = useState([]); // Siempre array
   const [paises, setPaises] = useState([]); // Siempre array
@@ -19,14 +21,14 @@ function Tasas() {
 
   const fetchTasas = async () => {
     // Cambia la URL para obtener todas las tasas (no solo por origen/destino)
-    const res = await axios.get('http://localhost:4000/api/tasas_cambios', {
+    const res = await axios.get(`${API_URL}/api/tasas_cambios`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     setTasas(Array.isArray(res.data) ? res.data : []);
   };
 
   const fetchPaises = async () => {
-    const res = await axios.get('http://localhost:4000/api/paises', {
+    const res = await axios.get(`${API_URL}/api/paises`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     setPaises(Array.isArray(res.data) ? res.data : []);
@@ -39,7 +41,7 @@ function Tasas() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await axios.post('/api/tasas_cambios', {
+    await axios.post(`${API_URL}/api/tasas_cambios`, {
       pais_origen_id: form.pais_origen_id,
       pais_destino_id: form.pais_destino_id,
       tasa: form.tasa,
@@ -50,7 +52,7 @@ function Tasas() {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Seguro que deseas eliminar esta tasa?')) {
-      await axios.delete(`/api/tasas_cambios/${id}`);
+      await axios.delete(`${API_URL}/api/tasas_cambios/${id}`);
       fetchTasas();
     }
   };
@@ -62,7 +64,7 @@ function Tasas() {
 
   const handleCreatePais = async (e) => {
     e.preventDefault();
-    await axios.post('/api/paises', newPais);
+    await axios.post(`${API_URL}/api/paises`, newPais);
     setNewPais({ nombre: '', codigo_iso: '', moneda: '', codigo_moneda: '', simbolo_moneda: '' });
     setShowModal(false);
     fetchPaises();

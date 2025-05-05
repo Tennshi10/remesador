@@ -15,6 +15,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './index.css';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Main() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const [rol, setRol] = useState(null);
@@ -29,7 +31,7 @@ function Main() {
         return;
       }
       try {
-        await axios.get('http://localhost:4000/api/remesas', {
+        await axios.get(`${API_URL}/api/remesas`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setIsAuthenticated(true);
@@ -40,7 +42,7 @@ function Main() {
           setRol(storedRol);
         } else {
           // Si no, pide el rol al backend (requiere endpoint /api/mi-rol)
-          const rolRes = await axios.get('http://localhost:4000/api/mi-rol', {
+          const rolRes = await axios.get(`${API_URL}/api/mi-rol`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setRol(rolRes.data.rol);

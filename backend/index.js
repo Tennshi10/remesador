@@ -369,6 +369,64 @@ app.get('/api/usuarios', authenticate, async (req, res) => {
   }
 });
 
+// Obtener un usuario por ID
+app.get('/api/usuarios/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query(
+      'SELECT id, usuario, rol, activo FROM usuarios WHERE id = ?',
+      [id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener usuario' });
+  }
+});
+
+// Actualizar usuario por ID
+app.put('/api/usuarios/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { usuario, clave, rol, activo } = req.body;
+    // Solo actualiza la clave si se envía
+    let updateFields = [];
+    let values = [];
+    if (usuario !== undefined) {
+      updateFields.push('usuario = ?');
+      values.push(usuario);
+    }
+    if (clave) {
+      updateFields.push('clave_hash = ?');
+      values.push(clave);
+    }
+    if (rol !== undefined) {
+      updateFields.push('rol = ?');
+      values.push(rol);
+    }
+    if (activo !== undefined) {
+      updateFields.push('activo = ?');
+      values.push(activo);
+    }
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No hay campos para actualizar' });
+    }
+    values.push(id);
+    await pool.query(
+      `UPDATE usuarios SET ${updateFields.join(', ')} WHERE id = ?`,
+      values
+    );
+    // Devuelve el usuario actualizado
+    const [rows] = await pool.query('SELECT id, usuario, rol, activo FROM usuarios WHERE id = ?', [id]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+});
+
 // Servir archivos estáticos de comprobantes
 app.use('/uploads/comprobantes', express.static(UPLOADS_DIR));
 
