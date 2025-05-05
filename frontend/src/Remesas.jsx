@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './index.css'; // Ensure custom styles are applied
@@ -49,11 +50,19 @@ function Remesas() {
   const [showModal, setShowModal] = useState(false);
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [search, setSearch] = useState('');
+  const [comprobantes, setComprobantes] = useState([]); // Archivos seleccionados
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     fetchRemesas();
     fetchClientes();
     fetchPaises();
+    // Al cargar, pon el usuario_id real en el form
+    const userId = localStorage.getItem('user_id');
+    if (userId) {
+      setForm((prev) => ({ ...prev, usuario_id: parseInt(userId) }));
+    }
   }, []);
 
   const fetchRemesas = async () => {
@@ -143,12 +152,17 @@ function Remesas() {
     fetchClientes();
   };
 
+  const handleComprobantesChange = (e) => {
+    setComprobantes(Array.from(e.target.files));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const monto_destino = parseFloat(form.monto_origen) * parseFloat(form.tasa_cambio);
       const data = {
         ...form,
+        usuario_id: parseInt(localStorage.getItem('user_id')), // <-- fuerza el user_id real
         monto_destino: parseFloat(monto_destino.toFixed(2)),
         monto_origen: parseFloat(form.monto_origen),
         tasa_cambio: parseFloat(form.tasa_cambio),
@@ -160,21 +174,87 @@ function Remesas() {
         pais_origen_id: parseInt(form.pais_origen_id),
         pais_destino_id: parseInt(form.pais_destino_id),
         cliente_id: parseInt(form.cliente_id),
-        usuario_id: parseInt(form.usuario_id),
       };
 
+      // 1. Registrar la remesa
       const res = await axios.post('http://localhost:4000/api/remesas', data);
-      console.log('Remesa registrada:', res.data);
+      const remesaId = res.data.id;
+
+      // 2. Subir comprobantes si hay
+      if (comprobantes.length > 0) {
+        const formData = new FormData();
+        formData.append('remesa_id', remesaId);
+        comprobantes.forEach(file => formData.append('comprobantes', file));
+        await axios.post('http://localhost:4000/api/comprobantes', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
       setForm((f) => ({ ...f, monto_origen: '', tasa_cambio: '', comision: '', ganancia: '', beneficiario_nombre: '', notas: '' }));
+      setComprobantes([]);
       fetchRemesas();
     } catch (err) {
       console.error('Error al registrar remesa:', err.response?.data || err.message);
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('rol');
+    window.location.href = '/';
+  };
+
   return (
     <div className="container py-5">
-      <h1 className="text-center mb-4">Registro de Remesas</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <button className="btn btn-secondary me-2" onClick={() => navigate('/')}>
+            <i className="bi bi-arrow-left"></i> Atrás
+          </button>
+        </div>
+        <h1 className="text-center flex-grow-1">Registro de Remesas</h1>
+        <button className="btn btn-danger" onClick={() => setShowLogoutModal(true)}>
+          Cerrar Sesión
+        </button>
+      </div>
+
+      {/* Modal de confirmación para cerrar sesión */}
+      {showLogoutModal && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirmar</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowLogoutModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>¿Estás seguro de que deseas cerrar sesión?</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowLogoutModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleLogout}
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="card p-4 mb-5 shadow">
         <div className="form-group mb-3">
           <label htmlFor="cliente_id">Cliente</label>
@@ -296,6 +376,21 @@ function Remesas() {
             value={form.notas}
             onChange={handleChange}
           ></textarea>
+        </div>
+        <div className="form-group mb-3">
+          <label htmlFor="comprobantes">Comprobantes de Pago</label>
+          <input
+            type="file"
+            id="comprobantes"
+            name="comprobantes"
+            className="form-control"
+            multiple
+            accept="image/*,application/pdf"
+            onChange={handleComprobantesChange}
+          />
+          <small className="form-text text-muted">
+            Puedes adjuntar uno o varios archivos (imágenes o PDF).
+          </small>
         </div>
         <button type="submit" className="btn btn-primary">
           Registrar Remesa

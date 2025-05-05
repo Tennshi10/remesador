@@ -12,12 +12,21 @@ function Login({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    localStorage.removeItem('token'); // Limpia cualquier token previo
+    localStorage.removeItem('rol');
+    localStorage.removeItem('user_id');
     try {
       const res = await axios.post('http://localhost:4000/api/login', form);
       localStorage.setItem('token', res.data.token);
-      onLogin();
+      localStorage.setItem('rol', res.data.rol);
+      localStorage.setItem('user_id', res.data.user_id); // Guarda el id
+      onLogin({ rol: res.data.rol });
     } catch (err) {
-      setError('Credenciales inválidas');
+      setError(
+        err.response?.data?.error
+          ? err.response.data.error
+          : 'Credenciales inválidas'
+      );
     }
   };
 
