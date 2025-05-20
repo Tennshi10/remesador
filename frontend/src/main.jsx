@@ -10,6 +10,10 @@ import Transacciones from './Transacciones.jsx';
 import Tasas from './Tasas.jsx';
 import Clientes from './Clientes.jsx';
 import Usuarios from './Usuarios.jsx';
+import Proveedores from './Proveedores.jsx';
+import TasasBase from './TasasBase.jsx';
+import MisEnvios from './MisEnvios';
+import Reportes from './Reportes';
 import axios from 'axios'; // <--- Añade axios
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -74,7 +78,15 @@ function Main() {
   }
 
   if (rol === 'cliente') {
-    return <MenuCliente />;
+    return (
+      <Router>
+        <Routes>
+          <Route path="/" element={<MenuCliente />} />
+          <Route path="/remesas" element={<Remesas />} />
+          <Route path="/mis-envios" element={<MisEnvios />} />
+        </Routes>
+      </Router>
+    );
   }
 
   // Owner y operador ven el dashboard y transacciones
@@ -96,6 +108,9 @@ function Main() {
             <Route path="remesas" element={<Remesas />} />
             <Route path="tasas" element={<Tasas />} />
             <Route path="clientes" element={<Clientes />} />
+            <Route path="proveedores" element={<Proveedores />} />
+            <Route path="tasas-base" element={<TasasBase />} />
+            <Route path="reportes" element={<Reportes />} />
             {rol === 'owner' && <Route path="usuarios" element={<Usuarios />} />}
           </Route>
         </Routes>

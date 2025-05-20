@@ -19,13 +19,9 @@ function App() {
   const [remesas, setRemesas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [filteredClientes, setFilteredClientes] = useState([]);
-  const [paises, setPaises] = useState([]); // Store countries
-  const [filteredDestinos, setFilteredDestinos] = useState([]); // Filtered destination countries
   const [form, setForm] = useState({
     cliente_id: '',
     usuario_id: 1,
-    pais_origen_id: '',
-    pais_destino_id: '',
     monto_origen: '',
     tasa_cambio: '',
     comision: '',
@@ -37,14 +33,12 @@ function App() {
     beneficiario_nombre: '',
     notas: ''
   });
-  const [isTasaReadOnly, setIsTasaReadOnly] = useState(true); // Control for tasa_cambio field
   const [newClientForm, setNewClientForm] = useState({
     nombre_completo: '',
     identificacion: '',
     telefono: '',
     email: '',
-    direccion: '',
-    pais_id: ''
+    direccion: ''
   });
   const [showModal, setShowModal] = useState(false);
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
@@ -59,12 +53,11 @@ function App() {
   useEffect(() => {
     fetchRemesas();
     fetchClientes();
-    fetchPaises(); // Fetch countries
   }, []);
 
   const fetchRemesas = async () => {
     try {
-      const res = await axios.get('http://localhost:4000/api/remesas');
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/remesas`);
       setRemesas(res.data);
     } catch (err) {
       console.error('Error fetching remesas:', err);
@@ -72,44 +65,14 @@ function App() {
   };
 
   const fetchClientes = async () => {
-    const res = await axios.get('http://localhost:4000/api/clientes');
+    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/clientes`);
     setClientes(res.data);
     setFilteredClientes(res.data);
-  };
-
-  const fetchPaises = async () => {
-    const res = await axios.get('http://localhost:4000/api/paises');
-    setPaises(res.data);
-  };
-
-  const fetchTasaCambio = async (origenId, destinoId) => {
-    try {
-      const res = await axios.get(`/api/tasas_cambios?origen=${origenId}&destino=${destinoId}`);
-      if (res.data) {
-        setForm((prev) => ({ ...prev, tasa_cambio: res.data.tasa_cambio }));
-        setIsTasaReadOnly(true); // Make tasa_cambio read-only if it exists
-      } else {
-        setForm((prev) => ({ ...prev, tasa_cambio: '' }));
-        setIsTasaReadOnly(false); // Enable tasa_cambio if no rate exists
-      }
-    } catch (err) {
-      console.error('Error fetching tasa de cambio:', err);
-    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-
-    if (name === 'pais_origen_id') {
-      setFilteredDestinos(paises.filter((pais) => pais.id !== parseInt(value)));
-      setForm((prev) => ({ ...prev, pais_destino_id: '', tasa_cambio: '' }));
-      setIsTasaReadOnly(true); // Reset tasa_cambio to read-only
-    }
-
-    if (name === 'pais_destino_id' && form.pais_origen_id) {
-      fetchTasaCambio(form.pais_origen_id, value);
-    }
   };
 
   const handleSearch = (e) => {
@@ -136,14 +99,13 @@ function App() {
 
   const handleCreateClient = async (e) => {
     e.preventDefault();
-    await axios.post('http://localhost:4000/api/clientes', newClientForm);
+    await axios.post(`${import.meta.env.VITE_API_URL}/api/clientes`, newClientForm);
     setNewClientForm({
       nombre_completo: '',
       identificacion: '',
       telefono: '',
       email: '',
-      direccion: '',
-      pais_id: ''
+      direccion: ''
     });
     setShowCreateClientModal(false);
     fetchClientes(); // Refresh the client list
@@ -162,13 +124,11 @@ function App() {
       cuenta_bancaria_id: parseInt(form.cuenta_bancaria_id),
       wallet_origen_id: parseInt(form.wallet_origen_id),
       wallet_destino_id: parseInt(form.wallet_destino_id),
-      pais_origen_id: parseInt(form.pais_origen_id),
-      pais_destino_id: parseInt(form.pais_destino_id),
       cliente_id: parseInt(form.cliente_id),
       usuario_id: parseInt(form.usuario_id),
     };
 
-    await axios.post('http://localhost:4000/api/remesas', data);
+    await axios.post(`${import.meta.env.VITE_API_URL}/api/remesas`, data);
     setForm((f) => ({ ...f, monto_origen: '', tasa_cambio: '', comision: '', ganancia: '', beneficiario_nombre: '', notas: '' }));
     fetchRemesas();
   };
@@ -220,57 +180,6 @@ function App() {
       )}
 
       <form onSubmit={handleSubmit} className="card p-4 mb-5 shadow">
-        <div className="mb-3">
-          <label className="form-label">País de Origen</label>
-          <select
-            name="pais_origen_id"
-            value={form.pais_origen_id}
-            onChange={handleChange}
-            className="form-control"
-            required
-          >
-            <option value="">Seleccione un país</option>
-            {paises.map((pais) => (
-              <option key={pais.id} value={pais.id}>
-                {pais.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">País de Destino</label>
-          <select
-            name="pais_destino_id"
-            value={form.pais_destino_id}
-            onChange={handleChange}
-            className="form-control"
-            disabled={!form.pais_origen_id}
-            required
-          >
-            <option value="">Seleccione un país</option>
-            {filteredDestinos.map((pais) => (
-              <option key={pais.id} value={pais.id}>
-                {pais.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label">Tasa de Cambio</label>
-          <input
-            name="tasa_cambio"
-            type="number"
-            step="0.0001"
-            value={form.tasa_cambio}
-            onChange={handleChange}
-            className="form-control"
-            readOnly={isTasaReadOnly}
-            required
-          />
-        </div>
-
         <div className="mb-3">
           <label className="form-label">Cliente</label>
           <div className="input-group">
@@ -386,7 +295,6 @@ function App() {
                       <th>Nombre</th>
                       <th>Teléfono</th>
                       <th>Email</th>
-                      <th>País</th>
                       <th>Acción</th>
                     </tr>
                   </thead>
@@ -397,7 +305,6 @@ function App() {
                         <td>{cliente.nombre_completo}</td>
                         <td>{cliente.telefono}</td>
                         <td>{cliente.email}</td>
-                        <td>{cliente.pais_nombre}</td>
                         <td>
                           <button
                             className="btn btn-sm btn-primary"
@@ -489,23 +396,6 @@ function App() {
                       onChange={handleNewClientChange}
                       className="form-control"
                     ></textarea>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">País</label>
-                    <select
-                      name="pais_id"
-                      value={newClientForm.pais_id}
-                      onChange={handleNewClientChange}
-                      className="form-control"
-                      required
-                    >
-                      <option value="">Seleccione un país</option>
-                      {paises.map((pais) => (
-                        <option key={pais.id} value={pais.id}>
-                          {pais.nombre}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                 </div>
                 <div className="modal-footer">

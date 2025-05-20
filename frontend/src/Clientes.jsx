@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 function Clientes() {
   const [clientes, setClientes] = useState([]);
-  const [paises, setPaises] = useState([]);
+  const [metodos, setMetodos] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editCliente, setEditCliente] = useState(null);
   const [form, setForm] = useState({
@@ -14,12 +14,12 @@ function Clientes() {
     telefono: '',
     email: '',
     direccion: '',
-    pais_id: ''
+    metodo_id: ''
   });
 
   useEffect(() => {
     fetchClientes();
-    fetchPaises();
+    fetchMetodos();
   }, []);
 
   const fetchClientes = async () => {
@@ -27,9 +27,9 @@ function Clientes() {
     setClientes(res.data);
   };
 
-  const fetchPaises = async () => {
-    const res = await axios.get(`${API_URL}/api/paises`);
-    setPaises(res.data);
+  const fetchMetodos = async () => {
+    const res = await axios.get(`${API_URL}/api/metodos`);
+    setMetodos(res.data);
   };
 
   const handleEdit = (cliente) => {
@@ -40,7 +40,7 @@ function Clientes() {
       telefono: cliente.telefono,
       email: cliente.email,
       direccion: cliente.direccion,
-      pais_id: cliente.pais_id
+      metodo_id: cliente.metodo_id
     });
     setShowModal(true);
   };
@@ -72,7 +72,7 @@ function Clientes() {
       telefono: '',
       email: '',
       direccion: '',
-      pais_id: ''
+      metodo_id: ''
     });
     fetchClientes();
   };
@@ -81,7 +81,7 @@ function Clientes() {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>Clientes</h2>
-        <button className="btn btn-success" onClick={() => { setEditCliente(null); setForm({ nombre_completo: '', identificacion: '', telefono: '', email: '', direccion: '', pais_id: '' }); setShowModal(true); }}>
+        <button className="btn btn-success" onClick={() => { setEditCliente(null); setForm({ nombre_completo: '', identificacion: '', telefono: '', email: '', direccion: '', metodo_id: '' }); setShowModal(true); }}>
           <i className="bi bi-plus-circle"></i> Agregar Cliente
         </button>
       </div>
@@ -94,7 +94,7 @@ function Clientes() {
             <th>Teléfono</th>
             <th>Email</th>
             <th>Dirección</th>
-            <th>País</th>
+            <th>Método/Pais</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -107,7 +107,7 @@ function Clientes() {
               <td>{c.telefono}</td>
               <td>{c.email}</td>
               <td>{c.direccion}</td>
-              <td>{paises.find(p => p.id === c.pais_id)?.nombre || c.pais_id}</td>
+              <td>{c.metodo_nombre || c.metodo_id}</td>
               <td>
                 <button className="btn btn-primary btn-sm me-2" onClick={() => handleEdit(c)}>Editar</button>
                 <button className="btn btn-danger btn-sm" onClick={() => handleDelete(c.id)}>Eliminar</button>
@@ -147,11 +147,11 @@ function Clientes() {
                     <input className="form-control" name="direccion" value={form.direccion} onChange={handleChange} />
                   </div>
                   <div className="mb-2">
-                    <label>País</label>
-                    <select className="form-control" name="pais_id" value={form.pais_id} onChange={handleChange} required>
+                    <label>Método/Pais</label>
+                    <select className="form-control" name="metodo_id" value={form.metodo_id} onChange={handleChange} required>
                       <option value="">Seleccione</option>
-                      {paises.map(p => (
-                        <option key={p.id} value={p.id}>{p.nombre}</option>
+                      {metodos.map(m => (
+                        <option key={m.id} value={m.id}>{m.nombre}</option>
                       ))}
                     </select>
                   </div>

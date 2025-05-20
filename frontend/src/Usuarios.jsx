@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const token = localStorage.getItem('token');
 
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -21,7 +22,9 @@ function Usuarios() {
   }, []);
 
   const fetchUsuarios = async () => {
-    const res = await axios.get(`${API_URL}/api/usuarios`);
+    const res = await axios.get(`${API_URL}/api/usuarios`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     setUsuarios(res.data);
   };
 
@@ -40,7 +43,9 @@ function Usuarios() {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Seguro que deseas eliminar este usuario?')) {
-      await axios.delete(`${API_URL}/api/usuarios/${id}`);
+      await axios.delete(`${API_URL}/api/usuarios/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       fetchUsuarios();
     }
   };
@@ -59,19 +64,19 @@ function Usuarios() {
       setError('Las contraseñas no coinciden');
       return;
     }
+    const payload = {
+      usuario: form.usuario,
+      clave: form.clave,
+      rol: form.rol,
+      activo: form.activo ? 1 : 0 // <-- fuerza a número
+    };
     if (editUsuario) {
-      await axios.put(`${API_URL}/api/usuarios/${editUsuario.id}`, {
-        usuario: form.usuario,
-        clave: form.clave,
-        rol: form.rol,
-        activo: form.activo
+      await axios.put(`${API_URL}/api/usuarios/${editUsuario.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
       });
     } else {
-      await axios.post(`${API_URL}/api/usuarios`, {
-        usuario: form.usuario,
-        clave: form.clave,
-        rol: form.rol,
-        activo: form.activo
+      await axios.post(`${API_URL}/api/usuarios`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
       });
     }
     setShowModal(false);

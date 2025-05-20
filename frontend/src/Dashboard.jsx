@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
 
 function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showSoporteModal, setShowSoporteModal] = useState(false);
 
   // Obtener rol desde localStorage
   const rol = localStorage.getItem('rol');
@@ -51,60 +52,93 @@ function Dashboard() {
           </div>
           <ul className="nav flex-column mt-3">
             <li className="nav-item">
-              <button
-                className="nav-link text-start"
+              <Link
+                className={`nav-link text-start${location.pathname === '/' ? ' active' : ''}`}
                 style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
-                onClick={() => navigate('/')}
+                to="/"
                 title="Panel Principal"
               >
                 <i className="bi bi-house-door me-2"></i>
                 {!collapsed && 'Panel Principal'}
-              </button>
+              </Link>
             </li>
             <li className="nav-item">
-              <button
-                className="nav-link text-start"
+              <Link
+                className={`nav-link text-start${location.pathname.startsWith('/transacciones') ? ' active' : ''}`}
                 style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
-                onClick={() => navigate('/transacciones')}
+                to="/transacciones"
                 title="Transacciones"
               >
                 <i className="bi bi-arrow-left-right me-2"></i>
                 {!collapsed && 'Transacciones'}
-              </button>
+              </Link>
             </li>
             <li className="nav-item">
-              <button
-                className="nav-link text-start"
+              <Link
+                className={`nav-link text-start${location.pathname.startsWith('/tasas') ? ' active' : ''}`}
                 style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
-                onClick={() => navigate('/tasas')}
+                to="/tasas"
                 title="Tasas y Comisiones"
               >
                 <i className="bi bi-currency-exchange me-2"></i>
                 {!collapsed && 'Tasas y Comisiones'}
-              </button>
+              </Link>
             </li>
             <li className="nav-item">
-              <button
-                className="nav-link text-start"
+              <Link
+                className={`nav-link text-start${location.pathname.startsWith('/tasas-base') ? ' active' : ''}`}
                 style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
-                onClick={() => navigate('/clientes')}
+                to="/tasas-base"
+                title="Tasas Base"
+              >
+                <i className="bi bi-percent me-2"></i>
+                {!collapsed && 'Tasas Base'}
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link
+                className={`nav-link text-start${location.pathname.startsWith('/clientes') ? ' active' : ''}`}
+                style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
+                to="/clientes"
                 title="Clientes"
               >
                 <i className="bi bi-person-lines-fill me-2"></i>
                 {!collapsed && 'Clientes'}
-              </button>
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link
+                className={`nav-link text-start${location.pathname.startsWith('/proveedores') ? ' active' : ''}`}
+                style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
+                to="/proveedores"
+                title="Proveedores"
+              >
+                <i className="bi bi-people me-2"></i>
+                {!collapsed && 'Proveedores'}
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link
+                className={`nav-link text-start${location.pathname.startsWith('/reportes') ? ' active' : ''}`}
+                style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
+                to="/reportes"
+                title="Reportes"
+              >
+                <i className="bi bi-file-earmark-bar-graph me-2"></i>
+                {!collapsed && 'Reportes'}
+              </Link>
             </li>
             {rol === 'owner' && (
               <li className="nav-item">
-                <button
-                  className="nav-link text-start"
+                <Link
+                  className={`nav-link text-start${location.pathname.startsWith('/usuarios') ? ' active' : ''}`}
                   style={{ color: '#fff', background: 'none', border: 'none', fontSize: 16 }}
-                  onClick={() => navigate('/usuarios')}
+                  to="/usuarios"
                   title="Usuarios"
                 >
                   <i className="bi bi-people-fill me-2"></i>
                   {!collapsed && 'Usuarios'}
-                </button>
+                </Link>
               </li>
             )}
           </ul>
@@ -129,6 +163,41 @@ function Dashboard() {
               <h2 className="mb-0">Panel Principal</h2>
               <div style={{ fontWeight: 'bold', fontSize: 24 }}>LATAM CAMBIOS</div>
             </div>
+            {/* Tiles para clientes */}
+            {rol === 'cliente' && (
+              <div className="row mb-4">
+                <div className="col-md-4 mb-3">
+                  <div
+                    className="card p-4 text-center shadow-sm h-100"
+                    style={{ cursor: 'pointer', background: '#e3f2fd' }}
+                    onClick={() => navigate('/remesas')}
+                  >
+                    <i className="bi bi-send-fill" style={{ fontSize: 36, color: '#1976d2' }}></i>
+                    <div className="mt-2" style={{ fontWeight: 'bold' }}>Enviar Remesa</div>
+                  </div>
+                </div>
+                <div className="col-md-4 mb-3">
+                  <div
+                    className="card p-4 text-center shadow-sm h-100"
+                    style={{ cursor: 'pointer', background: '#e8f5e9' }}
+                    onClick={() => navigate('/mis-envios')}
+                  >
+                    <i className="bi bi-clock-history" style={{ fontSize: 36, color: '#388e3c' }}></i>
+                    <div className="mt-2" style={{ fontWeight: 'bold' }}>Estatus envíos</div>
+                  </div>
+                </div>
+                <div className="col-md-4 mb-3">
+                  <div
+                    className="card p-4 text-center shadow-sm h-100"
+                    style={{ cursor: 'pointer', background: '#fff3e0' }}
+                    onClick={() => setShowSoporteModal(true)}
+                  >
+                    <i className="bi bi-headset" style={{ fontSize: 36, color: '#ff9800' }}></i>
+                    <div className="mt-2" style={{ fontWeight: 'bold' }}>Soporte</div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="row mb-4">
               <div className="col-md-4">
                 <div className="card p-3 text-center">
@@ -191,6 +260,31 @@ function Dashboard() {
                 >
                   Cerrar Sesión
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Soporte */}
+      {showSoporteModal && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Soporte</h5>
+                <button type="button" className="btn-close" onClick={() => setShowSoporteModal(false)}></button>
+              </div>
+              <div className="modal-body text-center">
+                <p>¿Necesitas ayuda? Contáctanos por WhatsApp o llamada:</p>
+                <a href="https://wa.me/584121771977" target="_blank" rel="noopener noreferrer" className="btn btn-success mb-2">
+                  <i className="bi bi-whatsapp"></i> +58 412-1771977
+                </a>
+                <div>
+                  <span className="d-block">Teléfono: <b>+58 412-1771977</b></span>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowSoporteModal(false)}>Cerrar</button>
               </div>
             </div>
           </div>

@@ -22,14 +22,17 @@ function Remesas() {
   const [remesas, setRemesas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [filteredClientes, setFilteredClientes] = useState([]);
-  const [paises, setPaises] = useState([]);
+  const [metodos, setMetodos] = useState([]);
   const [filteredDestinos, setFilteredDestinos] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
+  const [tasas, setTasas] = useState([]);
   const [form, setForm] = useState({
     cliente_id: '',
     usuario_id: 1,
-    pais_origen_id: '',
-    pais_destino_id: '',
+    metodo_origen_id: '',
+    metodo_destino_id: '',
     monto_origen: '',
+    monto_destino: '',
     tasa_cambio: '',
     comision: '',
     ganancia: '',
@@ -38,7 +41,11 @@ function Remesas() {
     wallet_destino_id: 1,
     cuenta_bancaria_id: 1,
     beneficiario_nombre: '',
-    notas: ''
+    proveedor_id: '',
+    nombre_destinatario: '',
+    cedula_destinatario: '',
+    cuenta_banco_destinatario: '',
+    monto_recibir: ''
   });
   const [isTasaReadOnly, setIsTasaReadOnly] = useState(true);
   const [newClientForm, setNewClientForm] = useState({
@@ -47,25 +54,41 @@ function Remesas() {
     telefono: '',
     email: '',
     direccion: '',
-    pais_id: ''
+    metodo_id: ''
   });
   const [showModal, setShowModal] = useState(false);
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [search, setSearch] = useState('');
   const [comprobantes, setComprobantes] = useState([]); // Archivos seleccionados
+  const [adjuntosCliente, setAdjuntosCliente] = useState([]);
+  const [adjuntosOperador, setAdjuntosOperador] = useState([]);
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const rol = localStorage.getItem('rol') || '';
+  const userId = localStorage.getItem('user_id');
+  const [clienteActual, setClienteActual] = useState(null);
 
   useEffect(() => {
-    fetchRemesas();
     fetchClientes();
-    fetchPaises();
-    // Al cargar, pon el usuario_id real en el form
-    const userId = localStorage.getItem('user_id');
-    if (userId) {
-      setForm((prev) => ({ ...prev, usuario_id: parseInt(userId) }));
-    }
+    fetchMetodos();
+    fetchProveedores();
+    fetchTasas();
   }, []);
+
+  useEffect(() => {
+    // Cuando se cargan los clientes, si es cliente, selecciona automáticamente su propio cliente_id
+    if (rol === 'cliente' && clientes.length > 0 && userId) {
+      // Busca el cliente cuyo id coincida con el userId
+      const cliente = clientes.find(c => String(c.id) === String(userId));
+      if (cliente) {
+        setClienteActual(cliente);
+        setForm(prev => ({
+          ...prev,
+          cliente_id: cliente.id
+        }));
+      }
+    }
+  }, [clientes, rol, userId]);
 
   const fetchRemesas = async () => {
     try {
@@ -82,9 +105,19 @@ function Remesas() {
     setFilteredClientes(res.data);
   };
 
-  const fetchPaises = async () => {
-    const res = await axios.get(`${API_URL}/api/paises`);
-    setPaises(res.data);
+  const fetchMetodos = async () => {
+    const res = await axios.get(`${API_URL}/api/metodos`);
+    setMetodos(res.data);
+  };
+
+  const fetchProveedores = async () => {
+    const res = await axios.get(`${API_URL}/api/proveedores`);
+    setProveedores(res.data);
+  };
+
+  const fetchTasas = async () => {
+    const res = await axios.get(`${API_URL}/api/tasas_cambios`);
+    setTasas(res.data);
   };
 
   const fetchTasaCambio = async (origenId, destinoId) => {
@@ -102,18 +135,40 @@ function Remesas() {
     }
   };
 
+  const getMetodosDestino = () => {
+    if (!form.metodo_origen_id) return [];
+    return metodos.filter(dest =>
+      tasas.some(t =>
+        t.metodo_origen_id === parseInt(form.metodo_origen_id) &&
+        t.metodo_destino_id === dest.id
+      )
+    );
+  };
+
+  useEffect(() => {
+    const calcularTasaYRecibir = async () => {
+      if (form.metodo_origen_id && form.metodo_destino_id && form.monto_origen) {
+        const res = await axios.get(`${API_URL}/api/tasas_cambios?origen=${form.metodo_origen_id}&destino=${form.metodo_destino_id}`);
+        const tasa = res.data?.tasa_cambio || '';
+        const montoRecibir = tasa ? (parseFloat(form.monto_origen) * parseFloat(tasa)).toFixed(2) : '';
+        setForm(f => ({
+          ...f,
+          tasa_cambio: tasa,
+          monto_recibir: montoRecibir,
+          monto_destino: montoRecibir
+        }));
+      }
+    };
+    calcularTasaYRecibir();
+  }, [form.metodo_origen_id, form.metodo_destino_id, form.monto_origen]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
 
-    if (name === 'pais_origen_id') {
-      setFilteredDestinos(paises.filter((pais) => pais.id !== parseInt(value)));
-      setForm((prev) => ({ ...prev, pais_destino_id: '', tasa_cambio: '' }));
-      setIsTasaReadOnly(true);
-    }
-
-    if (name === 'pais_destino_id' && form.pais_origen_id) {
-      fetchTasaCambio(form.pais_origen_id, value);
+    if (name === 'metodo_origen_id') {
+      setFilteredDestinos(getMetodosDestino());
+      setForm((prev) => ({ ...prev, metodo_destino_id: '', tasa_cambio: '', monto_recibir: '' }));
     }
   };
 
@@ -148,7 +203,7 @@ function Remesas() {
       telefono: '',
       email: '',
       direccion: '',
-      pais_id: ''
+      metodo_id: ''
     });
     setShowCreateClientModal(false);
     fetchClientes();
@@ -160,43 +215,69 @@ function Remesas() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validación obligatoria de todos los campos requeridos
+    const requiredFields = [
+      'cliente_id', 'nombre_destinatario', 'cedula_destinatario',
+      'cuenta_banco_destinatario', 'monto_origen', 'metodo_origen_id', 'metodo_destino_id',
+      'tasa_cambio', 'monto_recibir'
+    ];
+    if (rol !== 'cliente') requiredFields.push('proveedor_id');
+    for (const field of requiredFields) {
+      if (!form[field]) {
+        alert('Todos los campos son obligatorios');
+        return;
+      }
+    }
     try {
-      const monto_destino = parseFloat(form.monto_origen) * parseFloat(form.tasa_cambio);
       const data = {
         ...form,
-        usuario_id: parseInt(localStorage.getItem('user_id')), // <-- fuerza el user_id real
-        monto_destino: parseFloat(monto_destino.toFixed(2)),
+        usuario_id: parseInt(userId),
+        monto_destino: parseFloat(form.monto_recibir),
         monto_origen: parseFloat(form.monto_origen),
         tasa_cambio: parseFloat(form.tasa_cambio),
-        comision: parseFloat(form.comision),
-        ganancia: parseFloat(form.ganancia),
+        comision: parseFloat(form.comision || 0),
+        ganancia: parseFloat(form.ganancia || 0),
         cuenta_bancaria_id: parseInt(form.cuenta_bancaria_id),
         wallet_origen_id: parseInt(form.wallet_origen_id),
         wallet_destino_id: parseInt(form.wallet_destino_id),
-        pais_origen_id: parseInt(form.pais_origen_id),
-        pais_destino_id: parseInt(form.pais_destino_id),
+        metodo_origen_id: parseInt(form.metodo_origen_id),
+        metodo_destino_id: parseInt(form.metodo_destino_id),
         cliente_id: parseInt(form.cliente_id),
+        proveedor_id: rol !== 'cliente' ? parseInt(form.proveedor_id) : null,
+        monto_recibir: parseFloat(form.monto_recibir)
       };
 
       // 1. Registrar la remesa
       const res = await axios.post(`${API_URL}/api/remesas`, data);
       const remesaId = res.data.id;
 
-      // 2. Subir comprobantes si hay
-      if (comprobantes.length > 0) {
+      // 2. Subir adjuntos cliente
+      if (adjuntosCliente.length > 0) {
         const formData = new FormData();
         formData.append('remesa_id', remesaId);
-        comprobantes.forEach(file => formData.append('comprobantes', file));
+        formData.append('tipo_pago', 'cliente');
+        adjuntosCliente.forEach(file => formData.append('comprobantes', file));
+        await axios.post(`${API_URL}/api/comprobantes`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+      // 3. Subir adjuntos operador (solo si operador/admin)
+      if (rol !== 'cliente' && adjuntosOperador.length > 0) {
+        const formData = new FormData();
+        formData.append('remesa_id', remesaId);
+        formData.append('tipo_pago', 'operador');
+        adjuntosOperador.forEach(file => formData.append('comprobantes', file));
         await axios.post(`${API_URL}/api/comprobantes`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       }
 
-      setForm((f) => ({ ...f, monto_origen: '', tasa_cambio: '', comision: '', ganancia: '', beneficiario_nombre: '', notas: '' }));
-      setComprobantes([]);
+      setForm((f) => ({ ...f, monto_origen: '', tasa_cambio: '', monto_recibir: '', beneficiario_nombre: '', nombre_destinatario: '', cedula_destinatario: '', cuenta_banco_destinatario: '', proveedor_id: '' }));
+      setAdjuntosCliente([]);
+      setAdjuntosOperador([]);
       fetchRemesas();
     } catch (err) {
-      console.error('Error al registrar remesa:', err.response?.data || err.message);
+      alert('Error al registrar remesa');
     }
   };
 
@@ -208,6 +289,11 @@ function Remesas() {
 
   return (
     <div className="container py-5">
+      {rol === 'cliente' && (
+        <div className="alert alert-info">
+          Por favor indique los datos de su envío, en la brevedad un Operador se pondrá en contacto para confirmar su pago y proceder con el envío.
+        </div>
+      )}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <button className="btn btn-secondary me-2" onClick={() => navigate('/')}>
@@ -258,185 +344,174 @@ function Remesas() {
       )}
 
       <form onSubmit={handleSubmit} className="card p-4 mb-5 shadow">
+        {/* Cliente */}
         <div className="form-group mb-3">
-          <label htmlFor="cliente_id">Cliente</label>
-          <div className="input-group">
-            <input
-              type="text"
-              className="form-control"
-              id="cliente_id"
-              name="cliente_id"
-              value={form.cliente_id}
-              onChange={handleChange}
-              readOnly
-            />
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={() => setShowModal(true)}
-            >
-              Seleccionar Cliente
-            </button>
-          </div>
-        </div>
-        <div className="form-group mb-3">
-          <label htmlFor="pais_origen_id">País de Origen</label>
-          <select
+          <label>Cliente que envía</label>
+          <input
             className="form-control"
-            id="pais_origen_id"
-            name="pais_origen_id"
-            value={form.pais_origen_id}
-            onChange={handleChange}
-          >
-            <option value="">Seleccione un país</option>
-            {paises.map((pais) => (
-              <option key={pais.id} value={pais.id}>
-                {pais.nombre}
-              </option>
-            ))}
-          </select>
+            name="cliente_id"
+            value={clienteActual ? clienteActual.nombre_completo : ''}
+            disabled
+            readOnly
+          />
         </div>
+        {/* Nuevos campos destinatario */}
         <div className="form-group mb-3">
-          <label htmlFor="pais_destino_id">País de Destino</label>
-          <select
+          <label>Nombre Destinatario</label>
+          <input
             className="form-control"
-            id="pais_destino_id"
-            name="pais_destino_id"
-            value={form.pais_destino_id}
+            name="nombre_destinatario"
+            value={form.nombre_destinatario}
             onChange={handleChange}
-          >
-            <option value="">Seleccione un país</option>
-            {filteredDestinos.map((pais) => (
-              <option key={pais.id} value={pais.id}>
-                {pais.nombre}
-              </option>
-            ))}
-          </select>
+            required
+          />
         </div>
         <div className="form-group mb-3">
-          <label htmlFor="monto_origen">Monto de Origen</label>
+          <label>Cédula Destinatario</label>
+          <input
+            className="form-control"
+            name="cedula_destinatario"
+            value={form.cedula_destinatario}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="form-group mb-3">
+          <label>Cuenta Banco Destinatario</label>
+          <input
+            className="form-control"
+            name="cuenta_banco_destinatario"
+            value={form.cuenta_banco_destinatario}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        {/* Monto a Enviar */}
+        <div className="form-group mb-3">
+          <label>Monto a Enviar</label>
           <input
             type="number"
             className="form-control"
-            id="monto_origen"
             name="monto_origen"
             value={form.monto_origen}
             onChange={handleChange}
+            required
           />
         </div>
+        {/* Métodos */}
         <div className="form-group mb-3">
-          <label htmlFor="tasa_cambio">Tasa de Cambio</label>
+          <label>Método de Origen</label>
+          <select
+            className="form-control"
+            name="metodo_origen_id"
+            value={form.metodo_origen_id}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Seleccione un método</option>
+            {metodos.map(m => (
+              <option key={m.id} value={m.id}>{m.nombre}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group mb-3">
+          <label>Método de Destino</label>
+          <select
+            className="form-control"
+            name="metodo_destino_id"
+            value={form.metodo_destino_id}
+            onChange={handleChange}
+            required
+            disabled={!form.metodo_origen_id}
+          >
+            <option value="">Seleccione un método</option>
+            {getMetodosDestino().map(m => (
+              <option key={m.id} value={m.id}>{m.nombre}</option>
+            ))}
+          </select>
+        </div>
+        {/* Tasa y monto a recibir */}
+        <div className="form-group mb-3">
+          <label>Tasa Aplicada</label>
           <input
             type="number"
             className="form-control"
-            id="tasa_cambio"
             name="tasa_cambio"
             value={form.tasa_cambio}
-            onChange={handleChange}
-            readOnly={isTasaReadOnly}
+            readOnly
+            required
           />
         </div>
         <div className="form-group mb-3">
-          <label htmlFor="comision">Comisión</label>
+          <label>Monto a Recibir (Aprox)</label>
           <input
             type="number"
             className="form-control"
-            id="comision"
-            name="comision"
-            value={form.comision}
-            onChange={handleChange}
+            name="monto_recibir"
+            value={form.monto_recibir}
+            readOnly
+            required
           />
         </div>
+        {/* Adjuntos de pago cliente */}
         <div className="form-group mb-3">
-          <label htmlFor="ganancia">Ganancia</label>
-          <input
-            type="number"
-            className="form-control"
-            id="ganancia"
-            name="ganancia"
-            value={form.ganancia}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="form-group mb-3">
-          <label htmlFor="beneficiario_nombre">Nombre del Beneficiario</label>
-          <input
-            type="text"
-            className="form-control"
-            id="beneficiario_nombre"
-            name="beneficiario_nombre"
-            value={form.beneficiario_nombre}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="form-group mb-3">
-          <label htmlFor="notas">Notas</label>
-          <textarea
-            className="form-control"
-            id="notas"
-            name="notas"
-            value={form.notas}
-            onChange={handleChange}
-          ></textarea>
-        </div>
-        <div className="form-group mb-3">
-          <label htmlFor="comprobantes">Comprobantes de Pago</label>
+          <label>Adjuntos Pago(s) Cliente</label>
           <input
             type="file"
-            id="comprobantes"
-            name="comprobantes"
             className="form-control"
             multiple
             accept="image/*,application/pdf"
-            onChange={handleComprobantesChange}
+            onChange={e => setAdjuntosCliente(Array.from(e.target.files))}
+            required
           />
-          <small className="form-text text-muted">
-            Puedes adjuntar uno o varios archivos (imágenes o PDF).
-          </small>
         </div>
         <button type="submit" className="btn btn-primary">
           Registrar Remesa
         </button>
       </form>
 
-      <h2 className="text-center mb-4">Movimientos Registrados</h2>
-      <table className="table table-striped table-bordered shadow">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>País de Origen</th>
-            <th>País de Destino</th>
-            <th>Monto de Origen</th>
-            <th>Monto de Destino</th>
-            <th>Tasa de Cambio</th>
-            <th>Comisión</th>
-            <th>Ganancia</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {remesas.map((remesa) => (
-            <tr key={remesa.id}>
-              <td>{remesa.id}</td>
-              <td>{remesa.cliente_id}</td>
-              <td>{remesa.pais_origen_id}</td>
-              <td>{remesa.pais_destino_id}</td>
-              <td>{remesa.monto_origen}</td>
-              <td>{remesa.monto_destino}</td>
-              <td>{remesa.tasa_cambio}</td>
-              <td>{remesa.comision}</td>
-              <td>{remesa.ganancia}</td>
-              <td>{remesa.estado}</td>
-              <td>
-                <button className="btn btn-sm btn-primary">Editar</button>
-                <button className="btn btn-sm btn-danger">Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {rol !== 'cliente' && (
+        <>
+          <h2 className="text-center mb-4">Movimientos Registrados</h2>
+          <table className="table table-striped table-bordered shadow">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Método de Origen</th>
+                <th>Método de Destino</th>
+                <th>Monto de Origen</th>
+                <th>Monto de Destino</th>
+                <th>Tasa de Cambio</th>
+                <th>Comisión</th>
+                <th>Ganancia</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {remesas.map((remesa) => (
+                <tr key={remesa.id}>
+                  <td>{remesa.id}</td>
+                  <td>{remesa.cliente_nombre || remesa.cliente_id}</td>
+                  <td>{remesa.metodo_origen_nombre || remesa.metodo_origen_id}</td>
+                  <td>{remesa.metodo_destino_nombre || remesa.metodo_destino_id}</td>
+                  <td>{remesa.monto_origen}</td>
+                  <td>{remesa.monto_destino}</td>
+                  <td>{remesa.tasa_cambio}</td>
+                  <td>{remesa.comision}</td>
+                  <td>{remesa.ganancia}</td>
+                  <td>{remesa.estado}</td>
+                  <td>
+                    <button className="btn btn-sm btn-primary">Editar</button>
+                    <button className="btn btn-sm btn-danger">Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
 
       {/* Modal para seleccionar cliente */}
       {showModal && (
@@ -566,18 +641,19 @@ function Remesas() {
                     />
                   </div>
                   <div className="form-group mb-3">
-                    <label htmlFor="pais_id">País</label>
+                    <label htmlFor="metodo_id">Método/Pais</label>
                     <select
                       className="form-control"
-                      id="pais_id"
-                      name="pais_id"
-                      value={newClientForm.pais_id}
+                      id="metodo_id"
+                      name="metodo_id"
+                      value={newClientForm.metodo_id}
                       onChange={handleNewClientChange}
+                      required
                     >
-                      <option value="">Seleccione un país</option>
-                      {paises.map((pais) => (
-                        <option key={pais.id} value={pais.id}>
-                          {pais.nombre}
+                      <option value="">Seleccione un método/pais</option>
+                      {metodos.map((metodo) => (
+                        <option key={metodo.id} value={metodo.id}>
+                          {metodo.nombre}
                         </option>
                       ))}
                     </select>
